@@ -8,6 +8,9 @@
     "watchapp": {
         "watchface": false
     },
+    "appKeys": {
+        "message": 0,
+    },
     "resources": {
         "media": [{
             "type": "png",
