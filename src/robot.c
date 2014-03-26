@@ -48,12 +48,12 @@ void robot_deinit(void) {
     // disable click provider...
 }
 
-/*
-** Register our interest in these clicks...
-*/
 static void click_config_provider(void *context) {
     static bool select_state = false;
 
+    /*
+    ** Register raw click handlers to receive input control for the robot.
+    */
     window_raw_click_subscribe(BUTTON_ID_DOWN, down_handler, 0, &select_state);
     window_raw_click_subscribe(BUTTON_ID_UP, down_handler, 0, &select_state);
     window_raw_click_subscribe(BUTTON_ID_SELECT, down_handler, up_handler,
