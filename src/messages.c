@@ -32,6 +32,7 @@
 **--
 */
 #include "rfkpebble.h"
+#include "messages.h"
 #define KEY_ID_MESSAGE 0
 
 /*
@@ -79,6 +80,7 @@ void message_deinit(void) {
 static void sync_error(DictionaryResult dict_status,
                        AppMessageResult app_msg_status,
                        void *context) {
+    APP_LOG(APP_LOG_LEVEL_INFO, messages[45]);
 }
 
 static void sync_changed(const uint32_t key,

@@ -23,3 +23,6 @@
 * Calculate inbound message size, max and included it.  The jaav script should be
   able to do this.  That way it is dynamic.
   Put an assert(INBOUND_SIZE <= app_message_max_size)
+
+* Build messages.h each time so that we get different messages with each build
+  of the app.
