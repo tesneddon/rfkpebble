@@ -1,0 +1,23 @@
+{
+    "uuid": "f2fde373-06c0-4b64-9f9a-914f12f977c1",
+    "shortName": "Robot Finds Kitten",
+    "longName": "Robot Finds Kitten",
+    "companyName": "Endless Software Solutions",
+    "versionCode": 1,
+    "versionLabel": "1.0.0",
+    "watchapp": {
+        "watchface": false
+    },
+    "resources": {
+        "media": [{
+            "type": "png",
+            "name": "IMAGE_MENU_ICON",
+            "file": "images/menuIcon.png",
+            "menuIcon": true
+        }, {
+            "type": "png",
+            "name": "IMAGE_SPLASH",
+            "file": "images/splash.png"
+        }]
+    }
+}
