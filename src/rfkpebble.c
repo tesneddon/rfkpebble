@@ -55,10 +55,17 @@ static void init(void) {
     window_layer = window_get_root_layer(window);
     window_stack_push(window, true);
 
+    /*
+    ** Initialise each subsystem...
+    */
+    message_init();
     robot_init(window);
 }
 
 static void deinit(void) {
+    message_deinit();
+    robot_deinit();
+
     if (window != 0) {
         window_destroy(window);
     }

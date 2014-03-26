@@ -33,6 +33,13 @@
 #include <pebble.h>
 
 /*
+** message.c
+*/
+
+    void message_init();
+    void message_deinit();
+
+/*
 ** robot.c
 */
 
