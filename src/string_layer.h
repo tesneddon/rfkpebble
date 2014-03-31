@@ -32,9 +32,22 @@
 #ifndef STRING_LAYER_H_
 #define STRING_LAYER_H_
 #include <pebble.h>
+
+    typedef enum {
+        GTextOrientationPortrait,
+        GTextOrientationLandscape,
+    } GTextOrientation;
+
 #ifdef __STRING_LAYER_BUILD__
     struct StringLayer {
-        // put our stuff in here...
+        Layer *layer;
+        const char *text;
+        GFont font;
+        GColor text_color : 2;
+        GColor background_color : 2;
+        GTextOverflowMode overflow_mode : 2;
+        GTextAlignment text_alignment : 2;
+        GTextOrientation text_orientation : 2;
     };
 #else
     struct StringLayer;
@@ -46,14 +59,17 @@
 ** string_layer.c
 */
 
-    string_layer_create
-    string_layer_destroy
-    string_layer_get_layer
-    string_layer_get_text
-    string_layer_set_font
-    string_layer_set_overflow_mode
-    string_layer_set_text
-    string_layer_set_text_alignment
-    string_layer_set_text_color
+    StringLayer *string_layer_create();
+    void string_layer_destroy(StringLayer *string_layer);
+    Layer *string_layer_get_layer(StringLayer *string_layer);
+    GTextOrientation string_layer_get_text_orientation(StringLayer *string_layer);
+    const char *string_layer_get_text(StringLayer *string_layer);
+    void string_layer_set_text(StringLayer *string_layer, const char *text);
+    void string_layer_set_text_alignment(StringLayer *string_layer,
+                                         GTextAlignment text_alignment);
+    void string_layer_set_text_color(StringLayer *string_layer,
+                                     GColor text_color);
+    void string_layer_set_text_orientation(StringLayer *string_layer,
+                                           GTextOrientation text_orientation);
 
 #endif /* STRING_LAYER_H_ */

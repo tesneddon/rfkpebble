@@ -36,12 +36,86 @@
 ** Forward Declarations
 */
 
-    string_layer_create
-    string_layer_destroy
-    string_layer_get_layer
-    string_layer_get_text
-    string_layer_set_font
-    string_layer_set_overflow_mode
-    string_layer_set_text
-    string_layer_set_text_alignment
-    string_layer_set_text_color
+    StringLayer *string_layer_create();
+    void string_layer_destroy(StringLayer *string_layer);
+    Layer *string_layer_get_layer(StringLayer *string_layer);
+    const char *string_layer_get_text(StringLayer *string_layer);
+    GTextOrientation string_layer_get_text_orientation(
+        StringLayer *string_layer);
+    void string_layer_set_text(StringLayer *string_layer, const char *text);
+    void string_layer_set_text_alignment(StringLayer *string_layer,
+                                         GTextAlignment text_alignment);
+    void string_layer_set_text_color(StringLayer *string_layer,
+                                     GColor text_color);
+    void string_layer_set_text_orientation(StringLayer *string_layer,
+                                           GTextOrientation text_orientation);
+
+StringLayer *string_layer_create(GRect frame) {
+    StringLayer *string_layer;
+
+    string_layer = malloc(sizeof(StringLayer));
+    if (string_layer != 0) {
+        string_layer->layer = layer_create(frame);
+        if (string_layer->layer != 0) {
+            string_layer->text_color = GColorBlack;
+            string_layer->background_color = GColorWhite;
+            string_layer->text_alignment = GTextAlignmentLeft;
+            string_layer->text_orientation = GTextOrientationPortrait;
+            string_layer->font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+
+            // set the update proc...
+        } else {
+            free(string_layer);
+            string_layer = 0;
+        }
+    }
+
+    return string_layer;
+}
+
+void string_layer_destroy(StringLayer *string_layer) {
+    if (string_layer == 0) return;
+
+    layer_destroy(string_layer->layer);
+    free(string_layer);
+}
+
+Layer *string_layer_get_layer(StringLayer *string_layer) {
+    if (string_layer == 0) return 0;
+    return string_layer->layer;
+}
+
+const char *string_layer_get_text(StringLayer *string_layer) {
+    if (string_layer == 0) return 0;
+    return string_layer->text;
+}
+
+GTextOrientation string_layer_get_text_orientation(StringLayer *string_layer) {
+    if (string_layer == 0) return 0;
+    return string_layer->text_orientation;
+}
+
+void string_layer_set_text(StringLayer *string_layer,
+                           const char *text) {
+    if (string_layer == 0) return;
+    string_layer->text = text;
+}
+
+void string_layer_set_text_alignment(StringLayer *string_layer,
+                                     GTextAlignment text_alignment) {
+    if (string_layer == 0) return;
+    string_layer->text_alignment = text_alignment;
+}
+
+void string_layer_set_text_color(StringLayer *string_layer,
+                                 GColor text_color) {
+    if (string_layer == 0) return;
+    string_layer->text_color = text_color;
+}
+
+void string_layer_set_text_orientation(StringLayer *string_layer,
+                                       GTextOrientation text_orientation) {
+    if (string_layer == 0) return;
+    string_layer->text_orientation = text_orientation;
+}
+
