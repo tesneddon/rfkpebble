@@ -39,8 +39,8 @@
     } GTextOrientation;
 
 #ifdef __STRING_LAYER_BUILD__
-    struct StringLayer {
-        Layer *layer;
+    typedef Layer StringLayer;
+    typedef struct StringLayerData {
         const char *text;
         GFont font;
         GColor text_color : 2;
@@ -48,18 +48,17 @@
         GTextOverflowMode overflow_mode : 2;
         GTextAlignment text_alignment : 2;
         GTextOrientation text_orientation : 2;
-    };
+    } StringLayerData;
 #else
     struct StringLayer;
-#endif /* __STRING_LAYER_BUILD__ */
-
     typedef struct StringLayer StringLayer;
+#endif /* __STRING_LAYER_BUILD__ */
 
 /*
 ** string_layer.c
 */
 
-    StringLayer *string_layer_create();
+    StringLayer *string_layer_create(GRect frame);
     void string_layer_destroy(StringLayer *string_layer);
     Layer *string_layer_get_layer(StringLayer *string_layer);
     GTextOrientation string_layer_get_text_orientation(StringLayer *string_layer);

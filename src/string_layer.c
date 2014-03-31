@@ -36,7 +36,7 @@
 ** Forward Declarations
 */
 
-    StringLayer *string_layer_create();
+    StringLayer *string_layer_create(GRect frame);
     void string_layer_destroy(StringLayer *string_layer);
     Layer *string_layer_get_layer(StringLayer *string_layer);
     const char *string_layer_get_text(StringLayer *string_layer);
@@ -49,73 +49,89 @@
                                      GColor text_color);
     void string_layer_set_text_orientation(StringLayer *string_layer,
                                            GTextOrientation text_orientation);
+    static void string_layer_update_proc(Layer *layer, GContext *gc);
 
 StringLayer *string_layer_create(GRect frame) {
-    StringLayer *string_layer;
+    StringLayer *layer;
+    StringLayerData *data;
 
-    string_layer = malloc(sizeof(StringLayer));
-    if (string_layer != 0) {
-        string_layer->layer = layer_create(frame);
-        if (string_layer->layer != 0) {
-            string_layer->text_color = GColorBlack;
-            string_layer->background_color = GColorWhite;
-            string_layer->text_alignment = GTextAlignmentLeft;
-            string_layer->text_orientation = GTextOrientationPortrait;
-            string_layer->font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+    layer = layer_create_with_data(frame, sizeof(StringLayerData));
+    if (layer != 0) {
+        data = layer_get_data(layer);
+        data->text_color = GColorBlack;
+        data->background_color = GColorWhite;
+        data->text_alignment = GTextAlignmentLeft;
+        data->text_orientation = GTextOrientationPortrait;
+        data->font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
 
-            // set the update proc...
-        } else {
-            free(string_layer);
-            string_layer = 0;
-        }
+        layer_set_update_proc(layer, string_layer_update_proc);
     }
 
-    return string_layer;
+    return layer;
 }
 
 void string_layer_destroy(StringLayer *string_layer) {
     if (string_layer == 0) return;
-
-    layer_destroy(string_layer->layer);
-    free(string_layer);
+    layer_destroy(string_layer);
 }
 
 Layer *string_layer_get_layer(StringLayer *string_layer) {
-    if (string_layer == 0) return 0;
-    return string_layer->layer;
+    return string_layer;
 }
 
 const char *string_layer_get_text(StringLayer *string_layer) {
+    StringLayerData *data;
+
     if (string_layer == 0) return 0;
-    return string_layer->text;
+    data = layer_get_data(string_layer);
+    return data->text;
 }
 
 GTextOrientation string_layer_get_text_orientation(StringLayer *string_layer) {
+    StringLayerData *data;
+
     if (string_layer == 0) return 0;
-    return string_layer->text_orientation;
+    data = layer_get_data(string_layer);
+    return data->text_orientation;
 }
 
 void string_layer_set_text(StringLayer *string_layer,
                            const char *text) {
+    StringLayerData *data;
+
     if (string_layer == 0) return;
-    string_layer->text = text;
+    data = layer_get_data(string_layer);
+    data->text = text;
 }
 
 void string_layer_set_text_alignment(StringLayer *string_layer,
                                      GTextAlignment text_alignment) {
+    StringLayerData *data;
+
     if (string_layer == 0) return;
-    string_layer->text_alignment = text_alignment;
+    data = layer_get_data(string_layer);
+    data->text_alignment = text_alignment;
 }
 
 void string_layer_set_text_color(StringLayer *string_layer,
                                  GColor text_color) {
+    StringLayerData *data;
+
     if (string_layer == 0) return;
-    string_layer->text_color = text_color;
+    data = layer_get_data(string_layer);
+    data->text_color = text_color;
 }
 
 void string_layer_set_text_orientation(StringLayer *string_layer,
                                        GTextOrientation text_orientation) {
+    StringLayerData *data;
+
     if (string_layer == 0) return;
-    string_layer->text_orientation = text_orientation;
+    data = layer_get_data(string_layer);
+    data->text_orientation = text_orientation;
 }
 
+static void string_layer_update_proc(Layer *layer,
+                                     GContext *gc) {
+    StringLayerData *data = layer_data_data(layer);
+}
