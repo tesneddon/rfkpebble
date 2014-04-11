@@ -33,6 +33,15 @@
 #include <pebble.h>
 #include "assert.h"
 
+/*
+** Useful macros...
+*/
+#define abs(i) ((i) < 0 ? -(i) : (i))
+
+/*
+** Our data types.
+*/
+
     struct context_;
     typedef struct context_ Context;
 

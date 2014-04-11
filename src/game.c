@@ -30,8 +30,12 @@
 */
 #include "rfkpebble.h"
 #define BOGUS_MAX 20        /* Max. bogus characters */
-#define SCREEN_MAX (13*9)   /* Mono font at 18pt give a 13 x 9 grid */
-#define ROBOT_CHAR '#'      /* Robot is always the hash character */
+#define HALF_SECOND 500     /* Half a second, in milliseconds */
+#define SCREEN_HEIGHT 9     /* Screen height in characters } Mono font at */
+#define SCREEN_WIDTH 13     /* Screen width in characters  } 18 pt.       */
+#define SCREEN_MAX (SCREEN_HEIGHT*SCREEN_WIDTH)
+#define EMPTY ' '           /* Empty character */
+#define ROBOT '#'           /* Robot is always the hash character */
 
 /*
 ** Forward declarations
@@ -42,16 +46,41 @@
     void go(Context *ctx);
     static int randxy(Context *game);
     static char randchr(Context *game);
+    static void calibrate(Context *game);
+    static void calibration_complete(void *data);
+    static void process_input(AccelData *data, uint32_t num_samples);
 
 /*
 ** Game context.
 */
 
     typedef struct context_ {
-        bool paused;
+        enum {
+            IGNORE = 0,
+            CALIBRATE,
+            PAUSE,
+            PLAY,
+        } state;
+        void *data;
         GFont font;
         TextLayer *layer;
         Window *window;
+        int robot;
+        uint64_t timestamp;
+        int16_t min_x, min_y;
+        int16_t max_x, max_y;
+/*
+
+    Add some max/min movements, so we calibrate over a small time, with
+    a message on the screen...
+
+    get a min/max x and min/max y
+
+    also, use the timestamp to ignore samples that come in too quickly...
+    don't fetch window, etc. if we are ignoring an event...
+
+*/
+
         char *bogus[BOGUS_MAX];
         char screen[SCREEN_MAX+1];
     } Context;
@@ -106,6 +135,8 @@ Context *game_init(void) {
 static void unload(Window *w) {
     Context *game = window_get_user_data(w);
 
+    accel_data_service_unsubscribe();
+
     if (game->layer != 0) text_layer_destroy(game->layer);
     if (game->font != 0) fonts_unload_custom_font(game->font);
     free(game);
@@ -115,19 +146,19 @@ static void unload(Window *w) {
 
 void go(Context *game) {
 
-    if (game->paused) {
-        game->paused = false;
-    } else {
+    // pause?
+    {
         /*
         ** Initialize the screen.
         */
-        memset(game->screen, ' ', SCREEN_MAX);
+        memset(game->screen, EMPTY, SCREEN_MAX);
         game->screen[SCREEN_MAX] = '\0';
 
         /*
         ** Initialize the robot...
         */
-        game->screen[randxy(game)] = ROBOT_CHAR;
+        game->robot = randxy(game);
+        game->screen[game->robot] = ROBOT;
 
         /*
         ** ...the kitten...
@@ -151,24 +182,34 @@ void go(Context *game) {
             game->screen[pos] = c;
         }
 
-        // do the stuff to queue input/etc
+        /*
+        ** Setup controller input and away we go!
+        */
+        game->state = IGNORE;
+        accel_data_service_subscribe(1, process_input);
+        accel_service_set_sampling_rate(ACCEL_SAMPLING_10HZ);
     }
 
     window_stack_push(game->window, true);
+
+    calibrate(game);
 }
 
 static int randxy(Context *game) {
-    int i;
-
     /*
     ** Find a free position on the screen.  However, make sure we are not
     ** blocked in by other characters.
     */
-    do {
-        i = rand() % SCREEN_MAX;
-    } while ((game->screen[i] | game->screen[i-1] | game->screen[i+1]) != ' ');
+    for (;;) {
+        int i = rand() % SCREEN_MAX;
+        if ((game->screen[i] | game->screen[i-1]
+            | game->screen[i+1]) == EMPTY) {
 
-    return i;
+            return i;
+        }
+    }
+
+    return 0; /* We should never reach here */
 }
 
 static char randchr(Context *game) {
@@ -190,3 +231,86 @@ static char randchr(Context *game) {
 
     return c;
 }
+
+static void calibrate(Context *game) {
+
+    Layer *window_layer = window_get_root_layer(game->window);
+    TextLayer *message_layer = 0;
+
+    message_layer = text_layer_create(layer_get_frame(window_layer));
+    if (message_layer != 0) {
+        text_layer_set_text_alignment(message_layer,
+                                      GTextAlignmentCenter);
+        text_layer_set_text(message_layer, "\n\n\n\n\nCalibrarting...");
+        layer_add_child(window_layer, text_layer_get_layer(message_layer));
+
+        game->state = CALIBRATE;
+        game->min_x = game->min_y = game->max_x = game->max_y = 0;
+        game->data = message_layer;
+        app_timer_register(1000, calibration_complete, game);
+    }
+}
+
+static void calibration_complete(void *data) {
+    Context *game = data;
+    TextLayer *message_layer = (TextLayer *)game->data;
+
+    layer_remove_from_parent(text_layer_get_layer(message_layer));
+    text_layer_destroy(message_layer);
+    game->state = PLAY;
+}
+
+static void process_input(AccelData *data,
+                          uint32_t num_samples) {
+
+    Window *window = window_stack_get_top_window();
+    Context *game = window_get_user_data(window);
+
+    if (game->state == CALIBRATE) {
+        /*
+        ** We read the accelerometer data to try determine a "normal"
+        ** on which all other movement is based.
+        */
+        if (data->x < game->min_x) game->min_x = data->x;
+        if (data->x > game->max_x) game->max_x = data->x;
+        if (data->y < game->min_y) game->min_y = data->y;
+        if (data->y > game->max_y) game->max_y = data->y;
+    } else if (game->state == PLAY) {
+        /*
+        ** We only want to sample data every quater second?
+        */
+        if (data->timestamp < game->timestamp) return;
+
+        APP_LOG(APP_LOG_LEVEL_INFO, "min_x=%d,max_x=%d,x=%d\n", game->min_x,
+                game->max_x, data->x);
+
+        if (data->x < (game->min_y - 100)) {             /* LEFT */
+            APP_LOG(APP_LOG_LEVEL_INFO, "LEFT");
+
+            if (((game->robot - 1) % SCREEN_WIDTH) != 0) {
+                if (game->screen[game->robot-1] == EMPTY) {
+                    game->screen[game->robot--] = EMPTY;
+                    game->screen[game->robot] = ROBOT;
+                    layer_mark_dirty(text_layer_get_layer(game->layer));
+                } else {
+                    // we have a collision and have to do something...
+                }
+            }
+        } else if (data->x > (game->max_x + 100)) {     /* RIGHT */
+            APP_LOG(APP_LOG_LEVEL_INFO, "RIGHT");
+
+            if ((game->robot % SCREEN_WIDTH) != 0) {
+                if (game->screen[game->robot+1] == EMPTY) {
+                    game->screen[game->robot++] = EMPTY;
+                    game->screen[game->robot] = ROBOT;
+                    layer_mark_dirty(text_layer_get_layer(game->layer));
+                } else {
+                    // we have a collision and have to do something...
+                }
+            }
+        }
+
+        game->timestamp = data->timestamp + 200;
+    }
+}
+

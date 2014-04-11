@@ -39,52 +39,13 @@
 ** Forward declarations
 */
 
-    void message_init(void);
-    void message_deinit(void);
-    static void sync_error(DictionaryResult dict_status,
-                           AppMessageResult app_msg_status, void *context);
-    static void sync_changed(const uint32_t key, const Tuple *new,
-                             const Tuple *old, void *context);
+    char *message_get(void);
 
-/*
-** Own storage
-*/
+char *message_get(void) {
 
-    static bool message_initialised = false;
-    static AppSync sync;
-    static uint8_t sync_buffer[124];
+    static char msg[132];
 
-void message_init(void) {
-    int status;
-    Tuplet initial[] = {
-        TupletCString(KEY_ID_MESSAGE, ""),
-    };
+    strcpy(msg, "testing...");
 
-    if (message_initialised) return;
-
-    status = app_message_open(app_message_inbox_size_maximum(),
-                              app_message_outbox_size_maximum());
-    if (status == APP_MSG_OK) {
-        app_sync_init(&sync, sync_buffer, sizeof(sync_buffer), initial,
-                      ARRAY_LENGTH(initial), sync_changed, sync_error, 0);
-        message_initialised = true;
-    }
-}
-
-void message_deinit(void) {
-    if (!message_initialised) return;
-
-    app_sync_deinit(&sync);
-}
-
-static void sync_error(DictionaryResult dict_status,
-                       AppMessageResult app_msg_status,
-                       void *context) {
-    APP_LOG(APP_LOG_LEVEL_INFO, messages[45]);
-}
-
-static void sync_changed(const uint32_t key,
-                         const Tuple *new,
-                         const Tuple *old,
-                         void *context) {
+    return msg;
 }
