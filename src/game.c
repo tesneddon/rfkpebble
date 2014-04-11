@@ -41,7 +41,7 @@
     static void unload(Window *w);
     void go(Context *ctx);
     static int randxy(Context *game);
-    static char randchr(Context *game, int max);
+    static char randchr(Context *game);
 
 /*
 ** Game context.
@@ -132,13 +132,13 @@ void go(Context *game) {
         /*
         ** ...the kitten...
         */
-        game->screen[randxy(game)] = randchr(game, 0);
+        game->screen[randxy(game)] = randchr(game);
 
         /*
         ** ...and all the bogus characters.
         */
         for (int i = 0; i < BOGUS_MAX; i++) {
-            char c = randchr(game, i), *msg;
+            char c = randchr(game), *msg;
             int pos = randxy(game);
 
             msg = message_get();
@@ -171,8 +171,7 @@ static int randxy(Context *game) {
     return i;
 }
 
-static char randchr(Context *game,
-                    int max) {
+static char randchr(Context *game) {
     int i;
     char c = '\0';
 
@@ -183,10 +182,10 @@ static char randchr(Context *game,
     while (c == '\0') {
         c = (char) (rand() % ('~' - '!')) + '!';
 
-        for (i = 0; i < max; i++) {
-            if (game->bogus[i][0] == c) break;
+        for (i = 0; i < SCREEN_MAX; i++) {
+            if (game->screen[i] == c) break;
         }
-        if (i < max) c = '\0';
+        if (i < SCREEN_MAX) c = '\0';
     }
 
     return c;
