@@ -21,6 +21,10 @@
             "type": "png",
             "name": "IMAGE_SPLASH",
             "file": "images/splash.png"
+        }, {
+            "type": "font",
+            "name": "FREE_MONO_18",
+            "file": "fonts/FreeMono.ttf"
         }]
     }
 }
