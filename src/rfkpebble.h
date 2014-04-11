@@ -31,19 +31,28 @@
 #ifndef RFKPEBBLE_H_
 #define RFKPEBBLE_H_
 #include <pebble.h>
+#include "assert.h"
 
-/*
-** message.c
-*/
+    struct context_;
+    typedef struct context_ Context;
 
-    void message_init();
-    void message_deinit();
+/* game.c */
 
-/*
-** robot.c
-*/
+    Context *game_init(void);
+    void go(Context *ctx);
+
+/* input.c */
+
+    void input_init(void);
+    void input_deinit(void);
+
+/* message.c */
+
+    char *message_get(void);
+
+/* robot.c */
 
     void robot_init(Window *window);
     void robot_deinit(void);
 
-#endif /* RFK_PEBBLE_H_ */
+#endif /* RFKPEBBLE_H_ */
