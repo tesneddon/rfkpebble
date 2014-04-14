@@ -25,6 +25,10 @@
             "type": "font",
             "name": "FREE_MONO_18",
             "file": "fonts/FreeMono.ttf"
+        }, {
+            "type": "font",
+            "name": "FREE_MONO_BOLD_18",
+            "file": "fonts/FreeMonoBold.ttf"
         }]
     }
 }
