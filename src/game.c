@@ -32,7 +32,7 @@
 #define BOGUS_MAX 20        /* Max. bogus characters */
 #define HALF_SECOND 500     /* Half a second, in milliseconds */
 #define SCREEN_HEIGHT 9     /* Screen height in characters } Mono font at */
-#define SCREEN_WIDTH 13     /* Screen width in characters  } 18 pt.       */
+#define SCREEN_WIDTH 14     /* Screen width in characters  } 18 pt.       */
 #define SCREEN_MAX (SCREEN_HEIGHT*SCREEN_WIDTH)
 #define EMPTY ' '           /* Empty character */
 #define ROBOT '#'           /* Robot is always the hash character */
@@ -127,7 +127,7 @@ Context *game_init(void) {
             text_layer_set_overflow_mode(game->bg_layer,
                                          GTextOverflowModeTrailingEllipsis);
             text_layer_set_font(game->bg_layer, game->bg_font);
-            text_layer_set_text(game->bg_layer, game->bg_screen);
+            text_layer_set_text(game->bg_layer, &game->bg_screen[1]);
             text_layer_set_text_alignment(game->bg_layer, GTextAlignmentLeft);
 
             layer_add_child(window_layer,
@@ -147,7 +147,7 @@ Context *game_init(void) {
                 text_layer_set_overflow_mode(game->fg_layer,
                                              GTextOverflowModeTrailingEllipsis);
                 text_layer_set_font(game->fg_layer, game->fg_font);
-                text_layer_set_text(game->fg_layer, game->fg_screen);
+                text_layer_set_text(game->fg_layer, &game->fg_screen[1]);
                 text_layer_set_text_alignment(game->fg_layer, GTextAlignmentLeft);
                 text_layer_set_background_color(game->fg_layer, GColorClear);
                 layer_add_child(window_layer,
@@ -327,9 +327,10 @@ static void process_input(AccelData *data,
         */
         if (data->timestamp < game->timestamp) return;
 
+        /*
+        ** Test for movement along the X axis...
+        */
         if (data->x < (game->min_x - 75)) {             /* LEFT */
-            APP_LOG(APP_LOG_LEVEL_INFO, "LEFT");
-
             if (((game->robot - 1) % SCREEN_WIDTH) != 0) {
                 if (game->bg_screen[game->robot-1] == EMPTY) {
                     game->fg_screen[game->robot--] = EMPTY;
@@ -339,44 +340,48 @@ static void process_input(AccelData *data,
                     // we have a collision and have to do something...
                 }
             }
-        }
-
-        game->timestamp = data->timestamp + 200;
-    }
-#if 0
- else if (game->state == PLAY) {
-
-        if (data->x < (game->min_x - 75)) {             /* LEFT */
-            APP_LOG(APP_LOG_LEVEL_INFO, "LEFT");
-
-//APP_LOG(APP_LOG_LEVEL_INFO, "r=%d;w=%d;%d",game->robot,SCREEN_WIDTH,
-//        game->robot % SCREEN_WIDTH);
-
-            if ((game->robot % SCREEN_WIDTH) != 0) {
-                if (game->screen[game->robot-1] == EMPTY) {
-                    game->screen[game->robot--] = EMPTY;
-                    game->screen[game->robot] = ROBOT;
-                    layer_mark_dirty(text_layer_get_layer(game->layer));
-                } else {
-                    // we have a collision and have to do something...
-                }
-            }
-        } else if (data->x > (game->max_x + 75)) {     /* RIGHT */
-            APP_LOG(APP_LOG_LEVEL_INFO, "RIGHT");
-
+        } else if (data->x > (game->max_x + 75)) {      /* RIGHT */
             if (((game->robot + 1) % SCREEN_WIDTH) != 0) {
-                if (game->screen[game->robot+1] == EMPTY) {
-                    game->screen[game->robot++] = EMPTY;
-                    game->screen[game->robot] = ROBOT;
-                    layer_mark_dirty(text_layer_get_layer(game->layer));
+                if (game->bg_screen[game->robot+1] == EMPTY) {
+                    game->fg_screen[game->robot++] = EMPTY;
+                    game->fg_screen[game->robot] = ROBOT;
+                    layer_mark_dirty(text_layer_get_layer(game->fg_layer));
                 } else {
                     // we have a collision and have to do something...
+                }
+            }
+        } else {
+            /*
+            ** Test for movement along the Y axis...
+            */
+            if (data->y > (game->max_y + 5)) {             /* UP */
+APP_LOG(APP_LOG_LEVEL_INFO, "UP");
+                if ((game->robot - SCREEN_WIDTH) > 0) {
+                    if (game->bg_screen[game->robot-SCREEN_WIDTH] == EMPTY) {
+                        game->fg_screen[game->robot] = EMPTY;
+                        game->robot -= SCREEN_WIDTH;
+                        game->fg_screen[game->robot] = ROBOT;
+                        layer_mark_dirty(text_layer_get_layer(game->fg_layer));
+                    } else {
+                        // we have a collision and have to do something
+                    }
+                }
+            } else if (data->y < (game->min_y - 20)) {      /* DOWN */
+APP_LOG(APP_LOG_LEVEL_INFO, "DOWN");
+                if ((game->robot + SCREEN_WIDTH) < SCREEN_MAX) {
+                    if (game->bg_screen[game->robot+SCREEN_WIDTH] == EMPTY) {
+                        game->fg_screen[game->robot] = EMPTY;
+                        game->robot += SCREEN_WIDTH;
+                        game->fg_screen[game->robot] = ROBOT;
+                        layer_mark_dirty(text_layer_get_layer(game->fg_layer));
+                    } else {
+                        // we have a collision and have to do something
+                    }
                 }
             }
         }
 
         game->timestamp = data->timestamp + 200;
     }
-#endif
 }
 
