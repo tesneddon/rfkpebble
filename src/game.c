@@ -121,8 +121,8 @@ Context *game_init(void) {
         game->fg_font = fonts_load_custom_font(
                           resource_get_handle(RESOURCE_ID_FREE_MONO_BOLD_18));
 
-//        game->bg_layer = text_layer_create(layer_get_frame(window_layer));
-        game->bg_layer = text_layer_create(GRect(0,0,142,168));
+        game->bg_layer = text_layer_create(layer_get_frame(window_layer));
+//        game->bg_layer = text_layer_create(GRect(0,0,143,168));
         if (game->bg_layer != 0) {
             text_layer_set_overflow_mode(game->bg_layer,
                                          GTextOverflowModeTrailingEllipsis);
@@ -133,7 +133,7 @@ Context *game_init(void) {
             layer_add_child(window_layer,
                             text_layer_get_layer(game->bg_layer));
 
-//            game->fg_layer = text_layer_create(layer_get_frame(window_layer));
+            game->fg_layer = text_layer_create(layer_get_frame(window_layer));
 /*
 ** TODO: @tesneddon define game_rect using the dimensions below.  Use this
 **                  for the fg and bg.  This means that there is an
@@ -142,7 +142,7 @@ Context *game_init(void) {
 **                  anything in it when we generate the random positions
 **                  for all the characters.
 */
-            game->fg_layer = text_layer_create(GRect(0,0,142,168));
+//            game->fg_layer = text_layer_create(GRect(0,0,143,168));
             if (game->fg_layer != 0) {
                 text_layer_set_overflow_mode(game->fg_layer,
                                              GTextOverflowModeTrailingEllipsis);
@@ -188,7 +188,7 @@ void go(Context *game) {
         /*
         ** Initialize the robot...
         */
-        game->robot = 39;// randxy(game);
+        game->robot = randxy(game);
         game->fg_screen[game->robot] = ROBOT;
 
         /*
@@ -217,7 +217,7 @@ void go(Context *game) {
         ** Setup controller input and away we go!
         */
         game->state = IGNORE;
-//        accel_data_service_subscribe(1, process_input);
+        accel_data_service_subscribe(1, process_input);
         accel_service_set_sampling_rate(ACCEL_SAMPLING_10HZ);
     }
 
@@ -233,10 +233,20 @@ static int randxy(Context *game) {
     */
     for (;;) {
         int i = rand() % SCREEN_MAX;
+
+        /*
+        ** Regenerate numbers that land in the "invisible column" or
+        ** are taken by the robot (if the foreground layer).
+        */
+        if ((i % SCREEN_WIDTH) == 0) continue;
         if (game->fg_screen[i] != EMPTY) continue;
+
         if ((game->bg_screen[i] | game->bg_screen[i-1]
             | game->bg_screen[i+1]) == EMPTY) {
-
+            /*
+            ** The number generated is not surrounded by other characters,
+            ** so return it to the caller!
+            */
             return i;
         }
     }
@@ -320,10 +330,7 @@ static void process_input(AccelData *data,
         if (data->x < (game->min_x - 75)) {             /* LEFT */
             APP_LOG(APP_LOG_LEVEL_INFO, "LEFT");
 
-//APP_LOG(APP_LOG_LEVEL_INFO, "r=%d;w=%d;%d",game->robot,SCREEN_WIDTH,
-//        game->robot % SCREEN_WIDTH);
-
-            if ((game->robot % SCREEN_WIDTH) != 0) {
+            if (((game->robot - 1) % SCREEN_WIDTH) != 0) {
                 if (game->bg_screen[game->robot-1] == EMPTY) {
                     game->fg_screen[game->robot--] = EMPTY;
                     game->fg_screen[game->robot] = ROBOT;
