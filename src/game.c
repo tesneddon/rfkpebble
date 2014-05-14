@@ -122,7 +122,6 @@ Context *game_init(void) {
                           resource_get_handle(RESOURCE_ID_FREE_MONO_BOLD_18));
 
         game->bg_layer = text_layer_create(layer_get_frame(window_layer));
-//        game->bg_layer = text_layer_create(GRect(0,0,143,168));
         if (game->bg_layer != 0) {
             text_layer_set_overflow_mode(game->bg_layer,
                                          GTextOverflowModeTrailingEllipsis);
@@ -134,15 +133,6 @@ Context *game_init(void) {
                             text_layer_get_layer(game->bg_layer));
 
             game->fg_layer = text_layer_create(layer_get_frame(window_layer));
-/*
-** TODO: @tesneddon define game_rect using the dimensions below.  Use this
-**                  for the fg and bg.  This means that there is an
-**                  invisible column, ie. 12, 25, 38, .etc.  Or,
-**                  (pos % 13) - 1.  Make sure that we don't store
-**                  anything in it when we generate the random positions
-**                  for all the characters.
-*/
-//            game->fg_layer = text_layer_create(GRect(0,0,143,168));
             if (game->fg_layer != 0) {
                 text_layer_set_overflow_mode(game->fg_layer,
                                              GTextOverflowModeTrailingEllipsis);
