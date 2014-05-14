@@ -226,7 +226,7 @@ static int randxy(Context *game) {
 
         /*
         ** Regenerate numbers that land in the "invisible column" or
-        ** are taken by the robot (if the foreground layer).
+        ** are taken by the robot (in the foreground layer).
         */
         if ((i % SCREEN_WIDTH) == 0) continue;
         if (game->fg_screen[i] != EMPTY) continue;
