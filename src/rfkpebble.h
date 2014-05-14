@@ -57,6 +57,7 @@
 
 /* message.c */
 
+    void message_init(Window *window);
     char *message_get(void);
 
 /* robot.c */

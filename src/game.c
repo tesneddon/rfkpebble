@@ -62,8 +62,8 @@
             PLAY,
         } state;
         void *data;
-        GFont font;
-        TextLayer *layer;
+        GFont bg_font, fg_font;
+        TextLayer *bg_layer, *fg_layer;
         Window *window;
         int robot;
         uint64_t timestamp;
@@ -82,7 +82,8 @@
 */
 
         char *bogus[BOGUS_MAX];
-        char screen[SCREEN_MAX+1];
+        char bg_screen[SCREEN_MAX+1];
+        char fg_screen[SCREEN_MAX+1];
     } Context;
 
     // setup screen aray
@@ -115,17 +116,43 @@ Context *game_init(void) {
         });
         window_layer = window_get_root_layer(game->window);
 
-        game->font = fonts_load_custom_font(
-                              resource_get_handle(RESOURCE_ID_FREE_MONO_18));
+        game->bg_font = fonts_load_custom_font(
+                          resource_get_handle(RESOURCE_ID_FREE_MONO_18));
+        game->fg_font = fonts_load_custom_font(
+                          resource_get_handle(RESOURCE_ID_FREE_MONO_BOLD_18));
 
-        game->layer = text_layer_create(layer_get_frame(window_layer));
-        if (game->layer != 0) {
-            text_layer_set_overflow_mode(game->layer,
-                                         GTextOverflowModeWordWrap);
-            text_layer_set_font(game->layer, game->font);
-            text_layer_set_text(game->layer, game->screen);
+//        game->bg_layer = text_layer_create(layer_get_frame(window_layer));
+        game->bg_layer = text_layer_create(GRect(0,0,142,168));
+        if (game->bg_layer != 0) {
+            text_layer_set_overflow_mode(game->bg_layer,
+                                         GTextOverflowModeTrailingEllipsis);
+            text_layer_set_font(game->bg_layer, game->bg_font);
+            text_layer_set_text(game->bg_layer, game->bg_screen);
+            text_layer_set_text_alignment(game->bg_layer, GTextAlignmentLeft);
 
-            layer_add_child(window_layer, text_layer_get_layer(game->layer));
+            layer_add_child(window_layer,
+                            text_layer_get_layer(game->bg_layer));
+
+//            game->fg_layer = text_layer_create(layer_get_frame(window_layer));
+/*
+** TODO: @tesneddon define game_rect using the dimensions below.  Use this
+**                  for the fg and bg.  This means that there is an
+**                  invisible column, ie. 12, 25, 38, .etc.  Or,
+**                  (pos % 13) - 1.  Make sure that we don't store
+**                  anything in it when we generate the random positions
+**                  for all the characters.
+*/
+            game->fg_layer = text_layer_create(GRect(0,0,142,168));
+            if (game->fg_layer != 0) {
+                text_layer_set_overflow_mode(game->fg_layer,
+                                             GTextOverflowModeTrailingEllipsis);
+                text_layer_set_font(game->fg_layer, game->fg_font);
+                text_layer_set_text(game->fg_layer, game->fg_screen);
+                text_layer_set_text_alignment(game->fg_layer, GTextAlignmentLeft);
+                text_layer_set_background_color(game->fg_layer, GColorClear);
+                layer_add_child(window_layer,
+                                text_layer_get_layer(game->fg_layer));
+            }
         }
     }
 
@@ -137,8 +164,10 @@ static void unload(Window *w) {
 
     accel_data_service_unsubscribe();
 
-    if (game->layer != 0) text_layer_destroy(game->layer);
-    if (game->font != 0) fonts_unload_custom_font(game->font);
+    if (game->bg_layer != 0) text_layer_destroy(game->bg_layer);
+    if (game->bg_font != 0) fonts_unload_custom_font(game->bg_font);
+    if (game->fg_layer != 0) text_layer_destroy(game->fg_layer);
+    if (game->fg_font != 0) fonts_unload_custom_font(game->fg_font);
     free(game);
 
     window_destroy(w);
@@ -151,19 +180,21 @@ void go(Context *game) {
         /*
         ** Initialize the screen.
         */
-        memset(game->screen, EMPTY, SCREEN_MAX);
-        game->screen[SCREEN_MAX] = '\0';
+        memset(game->bg_screen, EMPTY, SCREEN_MAX);
+        memset(game->fg_screen, EMPTY, SCREEN_MAX);
+        game->bg_screen[SCREEN_MAX] = '\0';
+        game->fg_screen[SCREEN_MAX] = '\0';
 
         /*
         ** Initialize the robot...
         */
-        game->robot = randxy(game);
-        game->screen[game->robot] = ROBOT;
+        game->robot = 39;// randxy(game);
+        game->fg_screen[game->robot] = ROBOT;
 
         /*
         ** ...the kitten...
         */
-        game->screen[randxy(game)] = randchr(game);
+        game->bg_screen[randxy(game)] = randchr(game);
 
         /*
         ** ...and all the bogus characters.
@@ -179,14 +210,14 @@ void go(Context *game) {
             game->bogus[i][0] = c;
             strcpy(&game->bogus[i][1], msg);
 
-            game->screen[pos] = c;
+            game->bg_screen[pos] = c;
         }
 
         /*
         ** Setup controller input and away we go!
         */
         game->state = IGNORE;
-        accel_data_service_subscribe(1, process_input);
+//        accel_data_service_subscribe(1, process_input);
         accel_service_set_sampling_rate(ACCEL_SAMPLING_10HZ);
     }
 
@@ -202,8 +233,9 @@ static int randxy(Context *game) {
     */
     for (;;) {
         int i = rand() % SCREEN_MAX;
-        if ((game->screen[i] | game->screen[i-1]
-            | game->screen[i+1]) == EMPTY) {
+        if (game->fg_screen[i] != EMPTY) continue;
+        if ((game->bg_screen[i] | game->bg_screen[i-1]
+            | game->bg_screen[i+1]) == EMPTY) {
 
             return i;
         }
@@ -223,10 +255,14 @@ static char randchr(Context *game) {
     while (c == '\0') {
         c = (char) (rand() % ('~' - '!')) + '!';
 
-        for (i = 0; i < SCREEN_MAX; i++) {
-            if (game->screen[i] == c) break;
+        if (c == ROBOT) {
+            c = '\0';
+        } else {
+            for (i = 0; i < SCREEN_MAX; i++) {
+                if (game->bg_screen[i] == c) break;
+            }
+            if (i < SCREEN_MAX) c = '\0';
         }
-        if (i < SCREEN_MAX) c = '\0';
     }
 
     return c;
@@ -277,17 +313,39 @@ static void process_input(AccelData *data,
         if (data->y > game->max_y) game->max_y = data->y;
     } else if (game->state == PLAY) {
         /*
-        ** We only want to sample data every quater second?
+        ** We only want to sample data every 200ms?
         */
         if (data->timestamp < game->timestamp) return;
 
-        APP_LOG(APP_LOG_LEVEL_INFO, "min_x=%d,max_x=%d,x=%d\n", game->min_x,
-                game->max_x, data->x);
-
-        if (data->x < (game->min_y - 100)) {             /* LEFT */
+        if (data->x < (game->min_x - 75)) {             /* LEFT */
             APP_LOG(APP_LOG_LEVEL_INFO, "LEFT");
 
-            if (((game->robot - 1) % SCREEN_WIDTH) != 0) {
+//APP_LOG(APP_LOG_LEVEL_INFO, "r=%d;w=%d;%d",game->robot,SCREEN_WIDTH,
+//        game->robot % SCREEN_WIDTH);
+
+            if ((game->robot % SCREEN_WIDTH) != 0) {
+                if (game->bg_screen[game->robot-1] == EMPTY) {
+                    game->fg_screen[game->robot--] = EMPTY;
+                    game->fg_screen[game->robot] = ROBOT;
+                    layer_mark_dirty(text_layer_get_layer(game->fg_layer));
+                } else {
+                    // we have a collision and have to do something...
+                }
+            }
+        }
+
+        game->timestamp = data->timestamp + 200;
+    }
+#if 0
+ else if (game->state == PLAY) {
+
+        if (data->x < (game->min_x - 75)) {             /* LEFT */
+            APP_LOG(APP_LOG_LEVEL_INFO, "LEFT");
+
+//APP_LOG(APP_LOG_LEVEL_INFO, "r=%d;w=%d;%d",game->robot,SCREEN_WIDTH,
+//        game->robot % SCREEN_WIDTH);
+
+            if ((game->robot % SCREEN_WIDTH) != 0) {
                 if (game->screen[game->robot-1] == EMPTY) {
                     game->screen[game->robot--] = EMPTY;
                     game->screen[game->robot] = ROBOT;
@@ -296,10 +354,10 @@ static void process_input(AccelData *data,
                     // we have a collision and have to do something...
                 }
             }
-        } else if (data->x > (game->max_x + 100)) {     /* RIGHT */
+        } else if (data->x > (game->max_x + 75)) {     /* RIGHT */
             APP_LOG(APP_LOG_LEVEL_INFO, "RIGHT");
 
-            if ((game->robot % SCREEN_WIDTH) != 0) {
+            if (((game->robot + 1) % SCREEN_WIDTH) != 0) {
                 if (game->screen[game->robot+1] == EMPTY) {
                     game->screen[game->robot++] = EMPTY;
                     game->screen[game->robot] = ROBOT;
@@ -312,5 +370,6 @@ static void process_input(AccelData *data,
 
         game->timestamp = data->timestamp + 200;
     }
+#endif
 }
 

@@ -39,13 +39,71 @@
 ** Forward declarations
 */
 
+void message_init(Window *window) ;
+    static void sync_error(DictionaryResult dict_status,
+                       AppMessageResult app_msg_status,
+                       void *context) ;
+    static void sync_changed(const uint32_t key,
+                         const Tuple *new,
+                         const Tuple *old,
+                         void *context) ;
     char *message_get(void);
+
+/*
+** Own storage
+*/
+
+    static AppSync sync;
+    static uint8_t sync_buffer[124];
+    static const Tuplet dummy[] = { {
+            .type = TUPLE_CSTRING,
+            .key = KEY_ID_MESSAGE,
+            .cstring = {
+                .data = "",
+                .length = 0,
+            },
+        },
+    };
+
+
+void message_init(Window *window) {
+    int status;
+//    Layer *window_layer = window_get_root_layer(window);
+
+    status = app_message_open(app_message_inbox_size_maximum(),
+                              app_message_outbox_size_maximum());
+APP_LOG(APP_LOG_LEVEL_INFO, "app_message_open=%d;ok=%d", status,APP_MSG_OK);
+    if (status == APP_MSG_OK) {
+        app_sync_init(&sync, sync_buffer, sizeof(sync_buffer),
+                      dummy, ARRAY_LENGTH(dummy), sync_changed,
+                      sync_error, 0);
+    }
+}
+
+static void sync_error(DictionaryResult dict_status,
+                       AppMessageResult app_msg_status,
+                       void *context) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "failed to retrieve a message;[%s]",
+            messages[45]);
+}
+
+static void sync_changed(const uint32_t key,
+                         const Tuple *new,
+                         const Tuple *old,
+                         void *context) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "got a message back....");
+}
 
 char *message_get(void) {
 
     static char msg[132];
+    int status;
 
     strcpy(msg, "testing...");
+
+
+    status = app_sync_set(&sync, dummy, ARRAY_LENGTH(dummy));
+    APP_LOG(APP_LOG_LEVEL_INFO, "status =%d", status);
 
     return msg;
 }

@@ -117,6 +117,9 @@ static void deinit(void) {
 
 static void play(int index,
                  void *ctx) {
+
+    message_init(0);
+
     if (game == 0) game = game_init();
     assert(game != 0);
 
