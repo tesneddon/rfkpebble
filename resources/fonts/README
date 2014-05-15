@@ -1,0 +1,13 @@
+The fonts used here are from the GNU FreeFont package, a family of free,
+scalable outline fonts for general use on computers and for desktop
+publishing.
+
+In the case of the rfkpebble project, the standard FreeMono font is used for
+the game characters.  Where as the # character from FreeMonoBold is used
+for the robot.
+
+More details related to the GNU FreeFont package can be found here:
+
+    https://www.gnu.org/software/freefont/
+
+
