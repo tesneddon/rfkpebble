@@ -39,7 +39,7 @@
 ** Forward declarations
 */
 
-void message_init(Window *window) ;
+    void message_init(Window *window);
     static void sync_error(DictionaryResult dict_status,
                        AppMessageResult app_msg_status,
                        void *context) ;
