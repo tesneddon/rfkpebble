@@ -165,6 +165,7 @@ static void unload(Window *w) {
 
 void go(Context *game) {
 
+    if (
     // pause?
     {
         /*
@@ -356,7 +357,7 @@ APP_LOG(APP_LOG_LEVEL_INFO, "UP");
                         // we have a collision and have to do something
                     }
                 }
-            } else if (data->y < (game->min_y - 20)) {      /* DOWN */
+            } else if (data->y < (game->min_y - 25)) {      /* DOWN */
 APP_LOG(APP_LOG_LEVEL_INFO, "DOWN");
                 if ((game->robot + SCREEN_WIDTH) < SCREEN_MAX) {
                     if (game->bg_screen[game->robot+SCREEN_WIDTH] == EMPTY) {
